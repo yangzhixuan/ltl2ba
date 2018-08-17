@@ -41,7 +41,7 @@ tNegate TFalse = TTrue
 tNegate a = (TNot a)
 
 automaton :: (Ord a) => TFormula a -> AltAutomaton (S.Set a) (TFormula a)
-automaton fml = AltAutomaton sigma states fml trans accept
+automaton fml = removeUnreachable (AltAutomaton sigma states fml trans accept)
   where sigma = S.powerSet (S.fromList (atomics fml))
         states = let subs = subFormulas fml
                  in nub (subs ++ map tNegate subs)
@@ -77,3 +77,5 @@ automaton fml = AltAutomaton sigma states fml trans accept
                                                                (PBFormula [[f]]))) xyTrans
 
 f1 = TNot (TUntil TTrue (TAtomic "q"))
+
+f2 = TUntil (TNext (TNot (TAtomic "p"))) (TAtomic "q")
