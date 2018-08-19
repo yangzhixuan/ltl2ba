@@ -29,10 +29,15 @@ satisfyings :: (Eq a) => [a] -> PBFormula a -> [[a]]
 satisfyings univ (PBFormula []) = powerOfList univ
 satisfyings univ (PBFormula (disj:rest)) = filter (\m -> (not . null) (intersect disj m)) (satisfyings univ (PBFormula rest))
 
--- 
-minimalSatisyings :: [[a]] -> [[a]]
-minimalSatisyings [x] = [x]
-minimalSatisyings (x:xs) = undefined
+minimalLists :: Eq a => [[a]] -> [[a]]
+minimalLists l = sieve (sortOn length l)
+  where sieve [] = []
+        sieve (x:xs) = x : sieve (filter (not . include x) xs)
+        include x y = all (`elem` y) x
+
+satisfyings' :: (Eq a) => [a] -> PBFormula a -> [[a]]
+satisfyings' univ = minimalLists . satisfyings univ
+
 
 instance (Show a) => Show (PBFormula a) where
   show (PBFormula []) = "⊤"
@@ -79,16 +84,16 @@ alt2ba (AltAutomaton sigma states start trans acc) =
         newTrans = M.fromList $ map (\s -> (s, stateTrans s)) newStates
 
         stateTrans ([],v) w = PBFormula [[ (y \\ acc, intersect y acc) |
-                                     y <- satisfyings states (foldr (\v1 f -> pbAnd (lookup' v1 w) f) pbTrue v) ]]
+                                     y <- satisfyings' states (foldr (\v1 f -> pbAnd (lookup' v1 w) f) pbTrue v) ]]
 
         stateTrans (u,v) w = PBFormula [nub [ (x \\ acc, nub (y ++ intersect x acc)) |
-                                   x <- satisfyings states (foldr (\u1 f -> pbAnd (lookup' u1 w) f) pbTrue u),
-                                   y <- satisfyings states (foldr (\v1 f -> pbAnd (lookup' v1 w) f) pbTrue v) ]]
+                                   x <- satisfyings' states (foldr (\u1 f -> pbAnd (lookup' u1 w) f) pbTrue u),
+                                   y <- satisfyings' states (foldr (\v1 f -> pbAnd (lookup' v1 w) f) pbTrue v) ]]
 
         lookup' u = fromMaybe (const pbFalse) (M.lookup u trans)
 
 removeUnreachable (AltAutomaton sigma states start trans acc) =
-  AltAutomaton sigma reachable start trans (intersect acc reachable)
+  AltAutomaton sigma reachable start (M.restrictKeys trans (S.fromList reachable)) (intersect acc reachable)
   where deadEnds = S.fromList $ filter (\s -> all (\w -> fromMaybe (const pbFalse) (M.lookup s trans) w == pbFalse) sigma) states
         reachable = S.elems (traverse start S.empty)
         traverse s visited | S.member s visited = visited

@@ -10,7 +10,7 @@ data TFormula a = TAtomic a | TTrue | TFalse
                 | TAnd (TFormula a) (TFormula a) | TOr (TFormula a) (TFormula a)
                 | TNot (TFormula a)
                 | TNext (TFormula a) | TUntil (TFormula a) (TFormula a)
-     deriving (Eq, Ord, Show)
+     deriving (Eq, Ord)
 
 atomics :: TFormula a -> [a]
 atomics a =
@@ -42,7 +42,7 @@ tNegate a = (TNot a)
 
 automaton :: (Ord a) => TFormula a -> AltAutomaton (S.Set a) (TFormula a)
 automaton fml = removeUnreachable (AltAutomaton sigma states fml trans accept)
-  where sigma = S.powerSet (S.fromList (atomics fml))
+  where sigma = S.fromList $ map S.fromList (powerOfList (atomics fml))
         states = let subs = subFormulas fml
                  in nub (subs ++ map tNegate subs)
 
@@ -76,6 +76,6 @@ automaton fml = removeUnreachable (AltAutomaton sigma states fml trans accept)
                                                         (pbAnd ((fromJust $ M.lookup x xyTrans) w)
                                                                (PBFormula [[f]]))) xyTrans
 
-f1 = TNot (TUntil TTrue (TAtomic "q"))
-
-f2 = TUntil (TNext (TNot (TAtomic "p"))) (TAtomic "q")
+-- f1 = TNot (TUntil TTrue (TAtomic "q"))
+--
+-- f2 = TUntil (TNext (TNot (TAtomic "p"))) (TAtomic "q")

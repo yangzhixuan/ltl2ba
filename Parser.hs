@@ -26,12 +26,12 @@ parens     = Token.parens     lexer
 whiteSpace = Token.whiteSpace lexer
 
 whileParser :: Parser (TFormula String)
-whileParser = whiteSpace >> bExpression
+whileParser = whiteSpace >> bExpression >>= \r -> eof >> return r
 
 bExpression :: Parser (TFormula String)
 bExpression = buildExpressionParser bOperators bTerm
 
-bOperators = [ [Prefix (reservedOp "!" >> return TNot),  Prefix (reservedOp "X" >> return TNext)]
+bOperators = [ [Prefix (reservedOp "!" >> return TNot), Prefix (reservedOp "X" >> return TNext)]
              , [Infix  (reservedOp "U" >> return TUntil) AssocLeft]
              , [Infix  (reservedOp "&" >> return TAnd) AssocLeft]
              , [Infix  (reservedOp "|" >> return TOr) AssocLeft]
